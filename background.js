@@ -1,3 +1,6 @@
+// Originally created by https://github.com/Borod4r
+// Updated to Manifest v3 and Firefox support by https://github.com/frostweep
+
 /*
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -12,101 +15,104 @@
  * the License.
  */
 
-// --------------------------------------------------
-// Vars
-// --------------------------------------------------
-
-const BASE_URL = "https://publisher.assetstore.unity3d.com";
-const SALES_URL = BASE_URL + "/sales.html";
-const PUBLISHER_OVERVIEW_URL = BASE_URL + "/api/publisher/overview.json";
+const SALES_URL = "https://publisher.unity.com/sales";
+const BASE_API_URL = "https://publisher.assetstore.unity3d.com";
+const PUBLISHER_OVERVIEW_URL = BASE_API_URL + "/api/publisher/overview.json";
 
 const ALARM = "refresh";
 
-var pollInterval = 30;  // minutes
+var pollInterval = 10;  // minutes
 
-// --------------------------------------------------
+const ext = typeof browser !== "undefined" ? browser : chrome;
+const isChrome = !(typeof InstallTrigger !== 'undefined');
+
 // Visual
-// --------------------------------------------------
-
 function showLoadingBadge() {
-    chrome.browserAction.setBadgeBackgroundColor({color:[125,125,125,255]});
-    chrome.browserAction.setBadgeText({ text: ". . ." } );
+    ext.action.setBadgeBackgroundColor({color:[125,125,125,255]});
+    ext.action.setBadgeText({ text: ". . ." } );
 }
 
 function showRevenueBadge(revenue) {
-    chrome.browserAction.setBadgeBackgroundColor({color:[0,125,100,255]});
-    chrome.browserAction.setBadgeText({ text: revenue.toString() + "$" } );
+    ext.action.setBadgeBackgroundColor({color:[0,125,100,255]});
+    ext.action.setBadgeText({ text: revenue.toString() + "$" } );
 }
 
 function showErrorBadge() {
-    chrome.browserAction.setBadgeBackgroundColor({color:[255,0,0,255]});
-    chrome.browserAction.setBadgeText({ text: "ERR" } );
+    ext.action.setBadgeBackgroundColor({ color: [255, 0, 0, 255] });
+    ext.action.setBadgeText({ text: "ERR" });
 }
 
-// --------------------------------------------------
 // Notifications
-// --------------------------------------------------
+async function playNotificationSound(source, volume = 1){
+    if(isChrome){
+        await createOffscreen();
+        await ext.runtime.sendMessage({ play: { source, volume } });
+    }else{
+        const audio = new Audio(source);
+        audio.volume = volume;
+        audio.play();
+    }
+}
 
-function playNotificationSound() {
-    var sound = new Audio('audio/coin.mp3');
-    sound.play();
+async function createOffscreen() {
+    if (await ext.offscreen.hasDocument()) return;
+    await ext.offscreen.createDocument({
+        url: 'offscreen.html',
+        reasons: ['AUDIO_PLAYBACK'],
+        justification: 'playing audio api'
+    });
 }
 
 function showRevenueNotification(revenue) {
     var opt = {
         type: "basic",
-        title: "Asset Store Checker",
-        message: "+ " + revenue.toString() + "$",
-        iconUrl: "icon.128.png"
+        title: "Unity Asset Store",
+        message: "Earned + " + revenue.toString() + "$",
+        iconUrl: ext.runtime.getURL("icon.png")
     };
-    chrome.notifications.create(opt);
-    playNotificationSound();
+    ext.notifications.create(opt);
+    playNotificationSound('audio/coin.mp3');
 }
 
-// --------------------------------------------------
 // Storage
-// --------------------------------------------------
-
 function checkRevenueDiff(period, revenue, callback) {
     var revenueKey = 'revenue_' + period.toString();
-    chrome.storage.local.get(revenueKey, function (old) {
+    ext.storage.local.get(revenueKey, function (old) {
         var oldRevenue = old[revenueKey] || 0;
         var diff = revenue - oldRevenue;
         if (diff > 0) {
             callback(diff);
-            chrome.storage.local.set({[revenueKey]: revenue});
+            ext.storage.local.set({[revenueKey]: revenue});
         }
     });
 }
 
-// --------------------------------------------------
 // HTTP Requests
-// --------------------------------------------------
-
 function getCurrentPeriodUrl(id) {
-    return BASE_URL + "/api/publisher-info/months/" + id + ".json";
+    return BASE_API_URL + "/api/publisher-info/months/" + id + ".json";
 }
 
 function getCurrentRevenueUrl(id, period) {
-    return BASE_URL + "/api/publisher-info/sales/"+ id + "/" + period + ".json";
+    return BASE_API_URL + "/api/publisher-info/sales/"+ id + "/" + period + ".json";
 }
 
 function get(url) {
-    return new Promise(function(resolve, reject) {
-        const xhr = new XMLHttpRequest();
-
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState !== 4) return;
-            if (xhr.status >= 200 && xhr.status < 300) {
-                resolve(xhr.responseText);
-            } else {
-                reject(xhr.statusText);
+    return new Promise((resolve, reject) => {
+        fetch(url, {
+            method: 'GET',
+            credentials: 'include'
+        }).then(response => {
+                if (!response.ok) {
+                    showErrorBadge();
+                    reject(response.statusText);
+                } else {
+                    resolve(response.text());
+                }
+            })
+            .catch(error => {
                 showErrorBadge();
-            }
-        };
-
-        xhr.open('GET', url, true);
-        xhr.send();
+                reject(error);
+            });
     });
 }
 
@@ -156,40 +162,30 @@ function chainError(err) {
     return Promise.reject(err);
 }
 
-// --------------------------------------------------
 // Alarms
-// --------------------------------------------------
-
 function scheduleRefreshAlarm() {
-    chrome.alarms.clear(ALARM);
-    chrome.alarms.create(ALARM, {periodInMinutes: pollInterval});
+    ext.alarms.clear(ALARM);
+    ext.alarms.create(ALARM, {
+        periodInMinutes: pollInterval
+    });
 }
 
-// --------------------------------------------------
 // Actions
-// --------------------------------------------------
-
-chrome.alarms.onAlarm.addListener(function(alarm) {
+ext.alarms.onAlarm.addListener(function(alarm) {
     getCurrentRevenue();
 });
 
-chrome.browserAction.onClicked.addListener(function(tab) {
-    chrome.tabs.create({ url: SALES_URL });
+ext.action.onClicked.addListener(function(tab) {
+    ext.tabs.create({ url: SALES_URL });
     scheduleRefreshAlarm();
     getCurrentRevenue();
 });
 
-// --------------------------------------------------
 // Init
-// --------------------------------------------------
-
 function onInit() {
     scheduleRefreshAlarm();
     getCurrentRevenue();
 }
 
-// --------------------------------------------------
 // Main
-// --------------------------------------------------
-
 onInit();

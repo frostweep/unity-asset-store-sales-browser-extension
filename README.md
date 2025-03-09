@@ -1,14 +1,14 @@
-# Asset Store Checker
+# Unity Asset Store Sales (originally Asset Store Checker)
 
-Asset Store Checker is a simple chrome extension that periodically checks your revenue on Unity Asset Store and displays it right in the chrome toolbar.
+Unity Asset Store Sales is a simple extension that's periodically checking your revenue on Unity Asset Store and displays it right in the toolbar and in via notification using Manifest v3 API.
 
-![Icon](https://raw.githubusercontent.com/PhannGor/phanngor.github.io/master/stuff/storechecker/images/01.png)
+![Icon](https://cdn.archive.frostweepgames.com/files/browser-extensions-sales-icon.png)
 
 It also shows a notification if something has sold.
 
-![Notification](https://raw.githubusercontent.com/PhannGor/phanngor.github.io/master/stuff/storechecker/images/02.png)
+![Notification](https://cdn.archive.frostweepgames.com/files/browser-extensions-sales-notification.png)
 
-## How to install
+## How to install in Chrome
 
 * Visit `chrome://extensions` in your browser (or open up the Chrome menu by clicking the icon to the far right of the Omnibox:  The menu's icon is three horizontal bars. and select **Extensions** under the **Tools** menu to get to the same place).
 
@@ -19,6 +19,14 @@ It also shows a notification if something has sold.
 * Navigate to the directory in which the extension files live, and select it.
 
 Alternatively, you can drag and drop the directory where the extension files live onto `chrome://extensions` in your browser to load it.
+
+## How to install in ![Firefox](https://github.com/frostweep/unity-asset-store-sales-browser-extension/tree/firefox)
+
+* Visit `about:debugging#/runtime/this-firefox` in your browser.
+
+* Click **Load Temporary Add-on** to pop up a file-selection dialog.
+
+* Navigate to the directory in which the extension files live, and select manifest.json file.
 
 ## How to use
 
