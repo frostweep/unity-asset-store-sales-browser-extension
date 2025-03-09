@@ -12,8 +12,7 @@
     "storage",
     "webRequest",
     "activeTab",
-    "tabs",
-    "offscreen"
+    "tabs"
   ],
   "host_permissions": [
     "*://publisher.assetstore.unity3d.com/*"
@@ -23,7 +22,6 @@
     "default_icon": "icon.png"
   },
   "background": {
-    "service_worker": "background.js"
-    // "scripts": ["background.js"]
+    "scripts": ["background.js"]
   }
 }
