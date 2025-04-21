@@ -1,7 +1,5 @@
 # Unity Asset Store Sales (originally [Asset Store Checker](https://github.com/Borod4r/Asset-Store-Checker))
 
-# [Not working anymore due to closed API by Unity]
-
 Unity Asset Store Sales is a simple extension that's periodically checking your revenue on Unity Asset Store and displays it right in the toolbar and in via notification using Manifest v3 API.
 
 ![Icon](https://cdn.archive.frostweepgames.com/files/browser-extensions-sales-icon.png)
