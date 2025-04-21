@@ -12,7 +12,9 @@
     "storage",
     "webRequest",
     "activeTab",
-    "tabs"
+    "tabs",
+    "offscreen",
+    "cookies"
   ],
   "host_permissions": [
     "*://publisher.assetstore.unity3d.com/*",
