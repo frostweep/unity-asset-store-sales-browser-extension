@@ -1,5 +1,6 @@
 // Originally created by https://github.com/Borod4r
 // Updated to Manifest v3 and Firefox support by https://github.com/frostweep
+// Updated to use Unity v2 API by Oleksandr Selivanov
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -15,9 +16,9 @@
  * the License.
  */
 
-const SALES_URL = "https://publisher.unity.com/sales";
-const BASE_API_URL = "https://publisher.assetstore.unity3d.com";
-const PUBLISHER_OVERVIEW_URL = BASE_API_URL + "/api/publisher/overview.json";
+const PUBLISHER_URL = "https://publisher.unity.com";
+const SALES_URL = `${PUBLISHER_URL}/sales`;
+const MONTLY_SALES_API_URL = `${PUBLISHER_URL}/publisher-v2-api/monthly-sales?date=`;
 
 const ALARM = "refresh";
 
@@ -87,74 +88,42 @@ function checkRevenueDiff(period, revenue, callback) {
     });
 }
 
-// HTTP Requests
-function getCurrentPeriodUrl(id) {
-    return BASE_API_URL + "/api/publisher-info/months/" + id + ".json";
-}
 
-function getCurrentRevenueUrl(id, period) {
-    return BASE_API_URL + "/api/publisher-info/sales/"+ id + "/" + period + ".json";
-}
-
-function get(url) {
-    return new Promise((resolve, reject) => {
-        fetch(url, {
-            method: 'GET',
-            credentials: 'include'
-        }).then(response => {
-                if (!response.ok) {
-                    showErrorBadge();
-                    reject(response.statusText);
-                } else {
-                    resolve(response.text());
-                }
-            })
-            .catch(error => {
-                showErrorBadge();
-                reject(error);
-            });
-    });
-}
-
-function getPublisherId() {
-    var id = get(PUBLISHER_OVERVIEW_URL)
-        .then(JSON.parse)
-        .then(function (result) {
-            return result.overview.id;
-        });
-
-    return id;
-}
-
-function getCurrentPeriod(id) {
-
-    var period = get(getCurrentPeriodUrl(id))
-        .then(JSON.parse)
-        .then(function (result) {
-            return result.periods[0].value;
-        });
-
-    return period;
-}
-
-function getCurrentRevenue() {
+async function getCurrentRevenue() {
     showLoadingBadge();
-    getPublisherId().then(function(id) {
-        getCurrentPeriod(id).then(function(period) {
-            get(getCurrentRevenueUrl(id, period))
-                .then(JSON.parse)
-                .then(function (result) {
-                    var arr = result.aaData;
-                    var revenue= 0.0;
-                    for(var i in arr) {
-                        revenue += parseFloat(arr[i][5].replace(/\$|,/g, ''));
-                    }
-                    revenue = Math.round(revenue * 0.7);
-                    showRevenueBadge(revenue);
-                    checkRevenueDiff(period, revenue, showRevenueNotification);
-                }, chainError);
-        }, chainError);
-    }, chainError);
+    const monthToFetch = `${new Date().getFullYear()}-${(new Date().getMonth() + 1).toString().padStart(2, '0')}-01`;
+    const monthlySalesUrl = `${MONTLY_SALES_API_URL}${monthToFetch}`;
+
+    try {
+        const cookies = await ext.cookies.getAll({ url: PUBLISHER_URL });
+        const csrf = cookies.find(c => c.name === '_csrf')?.value;
+
+        if (!csrf) throw new Error('CSRF token not found in cookies');
+
+        const response = await fetch(monthlySalesUrl, {
+            headers: {
+                'X-Csrf-Token': csrf,
+                'X-Source': 'publisher-portal',
+                'Accept': '*/*',
+                'Referer': SALES_URL,
+            },
+            credentials: 'include'
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+
+        let revenue = 0.0;
+        for (const item of data) {
+            revenue += parseFloat(item.revenue || 0);
+        }
+        revenue = Math.round(revenue);
+        showRevenueBadge(revenue);
+        checkRevenueDiff(monthToFetch, revenue, showRevenueNotification);
+    } catch (err) {
+        console.error('Fetch error:', err.message);
+        showErrorBadge();
+    }
 }
 
 function chainError(err) {
