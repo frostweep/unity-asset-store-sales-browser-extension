@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Unity Asset Store Sales",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Notify when sales happen on Unity Asset Store",
   "icons": {
     "256": "icon.png"
@@ -15,7 +15,8 @@
     "tabs"
   ],
   "host_permissions": [
-    "*://publisher.assetstore.unity3d.com/*"
+    "*://publisher.assetstore.unity3d.com/*",
+    "*://publisher.unity.com/*"
   ],
   "action": {
     "default_title": "",
