@@ -20,7 +20,7 @@ It also shows a notification if something has sold.
 
 Alternatively, you can drag and drop the directory where the extension files live onto `chrome://extensions` in your browser to load it.
 
-## How to install in ![Firefox](https://github.com/frostweep/unity-asset-store-sales-browser-extension/tree/firefox)
+## How to install in ![Firefox](https://github.com/frostweep/unity-asset-store-sales-browser-extension/tree/firefox) or install from ![Firefox Add-ons store](https://addons.mozilla.org/en-US/firefox/addon/unity-asset-store-sales/)
 
 * Visit `about:debugging#/runtime/this-firefox` in your browser.
 
